@@ -1,0 +1,103 @@
+body{
+    font-family: sans-serif;
+    background-color: hsl(30, 38%, 92%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.card{
+    display: flex;
+    width: 600px;
+    background-color: hsl(0, 0%, 100%);
+    border-radius: 12px;
+}
+
+.img{
+    width: 300px;
+    height: 100%;
+}
+
+.contenti{
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.idk1{
+    color: hsl(228, 12%, 48%);
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+.idk2{
+    font-family: serif;
+    font-size: 32px;
+    color:(212, 21%, 14%);
+    margin-bottom: 16px;
+}
+
+.idk3{
+    color: hsl(228, 12%, 48%);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.idk4{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.idk5{
+    font-family: serif;
+    font-size: 28px;
+    color: hsl(158, 36%, 37%);
+}
+
+.idk6{
+    color: hsl(228, 12%, 48%);
+    font-size: 13px;
+}
+
+.btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: hsl(158, 36%, 37%);
+    color:hsl(30, 38%, 92%);
+    padding: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background 0.3 ease;
+}
+
+.btn:hover{
+    background-color: hsl(158, 42%, 18%);
+}
+
+@media (max-width: 600px){
+.card {
+flex-direction: column;
+max-width: 350px;
+}
+.img{
+    content: url(mobile-design.jpg);
+    width: 100%;
+    height: auto;
+}
+
+.contenti{
+    padding: 24px;
+}
+
+.idk3{
+    font-size: 28px;
+}
+}

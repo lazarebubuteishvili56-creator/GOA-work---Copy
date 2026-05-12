@@ -1,0 +1,86 @@
+body{
+    margin: 0;
+    font-family: 'outfit', sans-serif;
+    background-color: hsl(30, 54%, 90%);
+    color:  hsl(30, 10%, 34%);
+    
+}
+
+.conteiner{
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+.recepi{
+    background-color: var(--white);
+    max-width: 700px;
+    border-radius: 20px;
+    padding: 24px;
+}
+
+.img{
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+
+h1{
+    font-size: 32px;
+    color: hsl(24, 5%, 18%);
+    margin-bottom: 16px;
+}
+
+h2{
+    font-size: 22px;
+    color: hsl(14, 45%, 36%);
+    margin-bottom: 16px;
+}
+
+p{
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.Simple{
+    color:  hsl(332, 51%, 32%);
+    font-size: 18px;
+}
+
+ul ol{
+    padding-left: 20px;
+}
+
+li{
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+strong{
+    color: hsl(24, 5%, 18%);
+}
+
+section{
+    margin-top: 24px;
+}
+
+.ingredients
+.Instructions{
+    border-bottom: 1px solid hsl(30, 18%, 87%);
+    padding-bottom: 20px;
+}
+table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+td{
+    padding: 10px 0;
+    border-bottom: 1px solid hsl(30, 18%, 87%);
+    font-weight: bold;
+}
+
+tr{
+    border-bottom: none;
+}

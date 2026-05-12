@@ -1,0 +1,20 @@
+@media (max-width: 600px){
+
+}
+.card {
+flex-direction: column;
+max-width: 350px;
+}
+.img{
+    content: url(mobile-design.jpg);
+    width: 100%;
+    height: auto;
+}
+
+.contenti{
+    padding: 24px;
+}
+
+.idk3{
+    font-size: 28px;
+}

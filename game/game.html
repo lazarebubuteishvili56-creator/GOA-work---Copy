@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Snake World</title>
+  <style>
+    :root{
+      --bg:#0f1724;--panel:#071029;--accent:#00d1b2;--muted:#94a3b8;--danger:#ff6b6b;
+      --ui:#0b1220;
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg),#071026 80%);color:#e6eef8;padding:20px;box-sizing:border-box}
+    .container{width:980px;max-width:100%;display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start}
+    .game-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:14px;box-shadow:0 6px 30px rgba(2,6,23,0.6);position:relative}
+    canvas{display:block;width:100%;height:640px;background:linear-gradient(180deg,#071026 0%, #04101a 100%);border-radius:8px;image-rendering:pixelated}
+    .sidebar{display:flex;flex-direction:column;gap:12px}
+    .panel{background:var(--panel);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03)}
+    h1{font-size:20px;margin:0 0 8px 0}
+    .score{font-size:28px;color:var(--accent);font-weight:700}
+    .meta{color:var(--muted);font-size:13px}
+    .controls{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit;padding:8px;border-radius:8px;cursor:pointer;transition:all .12s ease}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.4)}
+    select,label{font-size:13px;color:var(--muted)}
+    .small{font-size:13px;color:var(--muted)}
+    .footer{font-size:12px;color:var(--muted);margin-top:8px}
+    .row{display:flex;gap:8px;align-items:center}
+    .skin-preview{width:48px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);box-shadow:inset 0 -6px 18px rgba(0,0,0,0.35)}
+    .menu-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(2,6,23,0.75), rgba(2,6,23,0.85));border-radius:8px;z-index:30}
+    .menu-card{width:560px;max-width:94%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+    .menu-card h2{margin:0 0 8px 0;font-size:20px}
+    .menu-row{display:flex;justify-content:space-between;align-items:center;margin:10px 0}
+    .menu-note{color:var(--muted);font-size:13px;margin-top:8px}
+    .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .shop-item{background:var(--ui);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:6px;align-items:center}
+    .coin-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#2b2b2b;color:#ffd700;font-weight:700}
+    @media(max-width:980px){.container{grid-template-columns:1fr;grid-auto-rows:auto}canvas{height:480px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="game-card" id="gameCard">
+      <h1>The Snake World</h1>
+      <div class="meta">Eat food to grow. Collect coins to buy skins and decorations.</div>
+
+      <!-- Start menu overlay -->
+      <div id="menuOverlay" class="menu-overlay" aria-hidden="false">
+        <div class="menu-card" role="dialog" aria-label="Start Menu">
+          <h2>Start Game</h2>
+
+          <div style="margin-top:8px">
+            <label for="menuDifficulty"><strong>Difficulty</strong></label>
+            <div class="menu-row">
+              <select id="menuDifficulty" class="btn" style="min-width:220px">
+                <option value="easy">easy</option>
+                <option value="medium" selected>medium</option>
+                <option value="hard">hard</option>
+                <option value="imposible">imposible</option>
+                <option value="god">god</option>
+                <option value="dvin">dvin</option>
+              </select>
+              <div class="small" style="width:140px;text-align:right">Wrap on easy</div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="menuSkin"><strong>Snake Skin</strong></label>
+            <div class="menu-row">
+              <select id="menuSkin" class="btn" style="min-width:220px">
+                <option value="classic" selected>Classic</option>
+                <option value="neon">Neon</option>
+                <option value="pastel">Pastel</option>
+                <option value="retro">Retro</option>
+                <option value="jungle">Jungle</option>
+                <option value="galaxy">Galaxy (shop)</option>
+                <option value="gold">Gold (shop)</option>
+              </select>
+              <div id="menuSkinPreview" class="skin-preview" title="Preview"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="menuMap"><strong>Map</strong></label>
+            <div class="menu-row">
+              <select id="menuMap" class="btn" style="min-width:220px">
+                <option value="open" selected>Open</option>
+                <option value="obstacles">Obstacles</option>
+                <option value="maze">Maze</option>
+                <option value="narrow">Narrow</option>
+                <option value="islands">Islands</option>
+                <option value="bordered">Bordered</option>
+              </select>
+              <div class="small" style="width:140px;text-align:right">Choose arena layout</div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="menuLives"><strong>Lives (max 15)</strong></label>
+            <div class="menu-row">
+              <select id="menuLives" class="btn" style="min-width:220px"></select>
+              <div class="small" style="width:140px;text-align:right">How many lives to start with</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+            <button id="openShopBtn" class="btn">Shop</button>
+            <button id="startBtn" class="btn">Start Game</button>
+            <button id="closeMenuBtn" class="btn">Close</button>
+          </div>
+
+          <div class="menu-note">You can reopen the menu anytime with the Menu button on the right.</div>
+        </div>
+      </div>
+
+      <!-- Shop overlay -->
+      <div id="shopOverlay" class="menu-overlay" style="display:none" aria-hidden="true">
+        <div class="menu-card" role="dialog" aria-label="Shop">
+          <h2>Shop</h2>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="small">Coins: <span id="shopCoins" class="coin-badge">0</span></div>
+            <div class="small">Owned items persist</div>
+          </div>
+
+          <div class="shop-grid" id="shopGrid" style="margin-top:12px">
+            <!-- shop items injected by JS -->
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+            <button id="closeShopBtn" class="btn">Close Shop</button>
+          </div>
+        </div>
+      </div>
+
+      <canvas id="game"></canvas>
+
+      <div style="display:flex;justify-content:space-between;margin-top:10px;align-items:center">
+        <div class="small">Arrow keys to move • R to restart • Esc to open menu</div>
+        <div class="small">Maps, skins, difficulty, lives and coins</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small">Score</div>
+            <div id="score" class="score">0</div>
+          </div>
+          <div style="text-align:right">
+            <div class="small">High Score</div>
+            <div id="high" class="small">0</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div style="display:flex;gap:8px">
+            <button id="menuOpenBtn" class="btn">Menu</button>
+            <button id="restart" class="btn">Restart</button>
+            <button id="toggleGrid" class="btn">Toggle Grid</button>
+          </div>
+
+          <div style="margin-top:8px">
+            <label class="small"><strong>Current</strong></label>
+            <div class="row" style="margin-top:6px;justify-content:space-between">
+              <div class="small" id="currentDiff">Difficulty medium</div>
+              <div id="currentSkinPreview" class="skin-preview"></div>
+            </div>
+            <div style="margin-top:8px" class="small" id="currentMap">Map Open</div>
+            <div style="margin-top:8px" class="small"><strong>Lives:</strong> <span id="livesDisplay">3</span></div>
+            <div style="margin-top:8px" class="small"><strong>Coins:</strong> <span id="coinsDisplay" class="coin-badge">0</span></div>
+            <div style="margin-top:8px" class="small"><strong>Decoration:</strong> <span id="decDisplay">none</span></div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="small">Made with HTML Canvas • Collect coins to unlock skins</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="small" style="margin-bottom:8px"><strong>Tips</strong></div>
+        <ul style="margin:0 0 0 18px;padding:0;color:var(--muted);font-size:13px">
+          <li>Coins spawn occasionally and when you eat food</li>
+          <li>Use coins in Shop to unlock Galaxy and Gold skins and decorations</li>
+          <li>Maps now guarantee a clear spawn area</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Canvas and grid
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const CELL = 20;
+    let cols = 36; // increased space to make narrow/maze easier
+    let rows = 34;
+    let gridOn = false;
+
+    // DOM
+    const scoreEl = document.getElementById('score');
+    const highEl = document.getElementById('high');
+    const restartBtn = document.getElementById('restart');
+    const toggleGridBtn = document.getElementById('toggleGrid');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    const menuDifficulty = document.getElementById('menuDifficulty');
+    const menuSkin = document.getElementById('menuSkin');
+    const menuSkinPreview = document.getElementById('menuSkinPreview');
+    const menuMap = document.getElementById('menuMap');
+    const menuLives = document.getElementById('menuLives');
+    const menuOpenBtn = document.getElementById('menuOpenBtn');
+    const currentDiff = document.getElementById('currentDiff');
+    const currentSkinPreview = document.getElementById('currentSkinPreview');
+    const currentMapEl = document.getElementById('currentMap');
+    const livesDisplay = document.getElementById('livesDisplay');
+    const coinsDisplay = document.getElementById('coinsDisplay');
+    const decDisplay = document.getElementById('decDisplay');
+
+    // Shop elements
+    const openShopBtn = document.getElementById('openShopBtn');
+    const shopOverlay = document.getElementById('shopOverlay');
+    const closeShopBtn = document.getElementById('closeShopBtn');
+    const shopGrid = document.getElementById('shopGrid');
+    const shopCoins = document.getElementById('shopCoins');
+
+    // Skins and decorations
+    const SKINS = {
+      classic: { head:'#00e6c3', bodyStart:'#00d1b2', bodyEnd:'#007a5f', food:'#ffcc00', price:0 },
+      neon: { head:'#7cffcb', bodyStart:'#00f5ff', bodyEnd:'#7a00ff', food:'#ff3b81', price:0 },
+      pastel: { head:'#ffd6e0', bodyStart:'#ffd6a5', bodyEnd:'#c7f9cc', food:'#ffb4a2', price:0 },
+      retro: { head:'#ffb703', bodyStart:'#fb8500', bodyEnd:'#023047', food:'#8ecae6', price:0 },
+      jungle: { head:'#b7e778', bodyStart:'#4caf50', bodyEnd:'#1b5e20', food:'#ffcc00', price:0 },
+      galaxy: { head:'#b19cff', bodyStart:'#6b5b95', bodyEnd:'#2a2d43', food:'#ffd700', price:50 },
+      gold: { head:'#ffd700', bodyStart:'#ffb400', bodyEnd:'#b8860b', food:'#ffffff', price:120 }
+    };
+    const DECORATIONS = {
+      none: { price:0 },
+      stripe: { price:30 },
+      gem: { price:80 }
+    };
+
+    // Difficulties
+    const DIFFICULTIES = {
+      easy: { speed:4, speedInc:0.35, wrap:true },
+      medium: { speed:6, speedInc:0.6, wrap:false },
+      hard: { speed:9, speedInc:0.9, wrap:false },
+      imposible: { speed:12, speedInc:1.1, wrap:false },
+      god: { speed:16, speedInc:1.3, wrap:false },
+      dvin: { speed:22, speedInc:1.6, wrap:false }
+    };
+
+    // Map blocked grid
+    let blocked = [];
+
+    // Game state
+    let snake = [];
+    let dir = {x:1,y:0};
+    let nextDir = {x:1,y:0};
+    let food = null;
+    let coin = null;
+    let coinsOnMap = []; // allow multiple coins
+    let score = 0;
+    let high = Number(localStorage.getItem('snakeHigh') || 0);
+    let baseSpeed = DIFFICULTIES['medium'].speed;
+    let speedInc = DIFFICULTIES['medium'].speedInc;
+    let wrapWalls = DIFFICULTIES['medium'].wrap;
+    let tickInterval = null;
+    let gameOver = false;
+    let currentSkin = 'classic';
+    let currentMap = 'open';
+    let maxLives = 3;
+    let lives = 3;
+    let coins = Number(localStorage.getItem('snakeCoins') || 0);
+    let ownedSkins = JSON.parse(localStorage.getItem('ownedSkins') || '["classic","neon","pastel","retro","jungle"]');
+    let ownedDec = JSON.parse(localStorage.getItem('ownedDec') || '["none"]');
+    let equippedDec = localStorage.getItem('equippedDec') || 'none';
+
+    // Shop items list
+    const SHOP_ITEMS = [
+      { id: 'galaxy', type:'skin', name:'Galaxy', price: SKINS.galaxy.price },
+      { id: 'gold', type:'skin', name:'Gold', price: SKINS.gold.price },
+      { id: 'stripe', type:'dec', name:'Stripe Decoration', price: DECORATIONS.stripe.price },
+      { id: 'gem', type:'dec', name:'Gem Decoration', price: DECORATIONS.gem.price }
+    ];
+
+    // UI initial
+    scoreEl.textContent = score;
+    highEl.textContent = high;
+    coinsDisplay.textContent = coins;
+    shopCoins.textContent = coins;
+
+    // Populate lives dropdown 1..15
+    (function populateLivesOptions(){
+      const menuLivesEl = document.getElementById('menuLives');
+      menuLivesEl.innerHTML = '';
+      for (let i=1;i<=15;i++){
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = String(i);
+        if (i === 3) opt.selected = true;
+        menuLivesEl.appendChild(opt);
+      }
+    })();
+
+    // Canvas sizing
+    function resizeCanvas() {
+      canvas.width = cols * CELL;
+      canvas.height = rows * CELL;
+      canvas.style.width = Math.min(canvas.width, window.innerWidth - 160) + 'px';
+    }
+
+    // Map helpers
+    function makeEmptyBlocked() {
+      blocked = Array.from({length:rows}, () => Array(cols).fill(false));
+    }
+
+    function clearSpawnArea(cx, cy, radius=3) {
+      for (let y=cy-radius;y<=cy+radius;y++){
+        for (let x=cx-radius;x<=cx+radius;x++){
+          if (y>=0 && y<rows && x>=0 && x<cols) blocked[y][x] = false;
+        }
+      }
+    }
+
+    function applyMapPreset(name) {
+      currentMap = name;
+      makeEmptyBlocked();
+      if (name === 'open') {
+        // nothing blocked
+      } else if (name === 'obstacles') {
+        for (let y=0;y<rows;y++){
+          for (let x=0;x<cols;x++){
+            if (Math.random() < 0.06) blocked[y][x] = true;
+          }
+        }
+      } else if (name === 'maze') {
+        // wider maze with more gaps
+        for (let x=3;x<cols-3;x+=5){
+          for (let y=1;y<rows-1;y++) blocked[y][x] = true;
+          const gapCount = 2 + Math.floor(Math.random()*3);
+          for (let g=0;g<gapCount;g++){
+            const gap = 1 + Math.floor(Math.random()*(rows-2));
+            blocked[gap][x] = false;
+          }
+        }
+        // horizontal connectors
+        for (let y=3;y<rows-3;y+=5){
+          for (let x=2;x<cols-2;x++){
+            if (Math.random() < 0.10) blocked[y][x] = true;
+          }
+        }
+      } else if (name === 'narrow') {
+        // make narrow but with larger corridors and fewer blocking columns
+        for (let x=0;x<cols;x++){
+          if (x % 4 === 0) {
+            for (let y=0;y<rows;y++){
+              if (y % 6 !== 0) blocked[y][x] = true;
+            }
+          }
+        }
+        // carve extra gaps to ensure playability
+        for (let i=0;i<8;i++){
+          const gx = 1 + Math.floor(Math.random()*(cols-2));
+          const gy = 1 + Math.floor(Math.random()*(rows-2));
+          for (let dy=-2;dy<=2;dy++){
+            for (let dx=-2;dx<=2;dx++){
+              const x = gx+dx, y = gy+dy;
+              if (x>=0 && x<cols && y>=0 && y<rows) blocked[y][x] = false;
+            }
+          }
+        }
+      } else if (name === 'islands') {
+        // clusters of blocks but ensure center area clear and clusters not too dense
+        const clusters = 7;
+        for (let i=0;i<clusters;i++){
+          const cx = 3 + Math.floor(Math.random()*(cols-6));
+          const cy = 3 + Math.floor(Math.random()*(rows-6));
+          const size = 1 + Math.floor(Math.random()*3);
+          for (let dy=-size;dy<=size;dy++){
+            for (let dx=-size;dx<=size;dx++){
+              const x = cx+dx, y = cy+dy;
+              if (x>0 && x<cols-1 && y>0 && y<rows-1 && Math.random() < 0.75) blocked[y][x] = true;
+            }
+          }
+        }
+      } else if (name === 'bordered') {
+        // inner border walls leaving a smaller play area; ensure inside area is valid
+        const pad = 4;
+        for (let x=pad;x<cols-pad;x++){
+          blocked[pad][x] = true;
+          blocked[rows-pad-1][x] = true;
+        }
+        for (let y=pad;y<rows-pad;y++){
+          blocked[y][pad] = true;
+          blocked[y][cols-pad-1] = true;
+        }
+      }
+      // ensure spawn area center is clear and a generous radius
+      const cx = Math.floor(cols/2), cy = Math.floor(rows/2);
+      clearSpawnArea(cx, cy, 4);
+    }
+
+    // Spawn helpers
+    function isCellFree(x,y) {
+      if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
+      if (blocked[y][x]) return false;
+      if (snake.some(s => s.x === x && s.y === y)) return false;
+      if (coinsOnMap.some(c => c.x === x && c.y === y)) return false;
+      if (food && food.x === x && food.y === y) return false;
+      return true;
+    }
+
+    function placeFood() {
+      let attempts = 0;
+      while (attempts < 5000) {
+        const fx = Math.floor(Math.random()*cols);
+        const fy = Math.floor(Math.random()*rows);
+        if (isCellFree(fx,fy)) { food = {x:fx,y:fy}; return; }
+        attempts++;
+      }
+      // fallback: find first free cell
+      for (let y=0;y<rows;y++){
+        for (let x=0;x<cols;x++){
+          if (isCellFree(x,y)) { food = {x,y}; return; }
+        }
+      }
+      food = null;
+    }
+
+    function placeCoin() {
+      // spawn a single coin occasionally; allow up to 3 coins on map
+      if (coinsOnMap.length >= 3) return;
+      let attempts = 0;
+      while (attempts < 5000) {
+        const cx = Math.floor(Math.random()*cols);
+        const cy = Math.floor(Math.random()*rows);
+        if (isCellFree(cx,cy)) { coinsOnMap.push({x:cx,y:cy}); return; }
+        attempts++;
+      }
+    }
+
+    // Skin preview
+    function updateSkinPreviewElements() {
+      const s = SKINS[currentSkin] || SKINS.classic;
+      menuSkinPreview.style.background = `linear-gradient(90deg, ${s.bodyStart}, ${s.bodyEnd})`;
+      menuSkinPreview.style.borderColor = s.head;
+      currentSkinPreview.style.background = `linear-gradient(90deg, ${s.bodyStart}, ${s.bodyEnd})`;
+      currentSkinPreview.style.borderColor = s.head;
+      decDisplay.textContent = equippedDec;
+    }
+
+    // Reset and start
+    function resetGame() {
+      cols = Math.max(28, cols); rows = Math.max(24, rows);
+      applyMapPreset(currentMap);
+      snake = [
+        {x: Math.floor(cols/2), y: Math.floor(rows/2)},
+        {x: Math.floor(cols/2)-1, y: Math.floor(rows/2)},
+        {x: Math.floor(cols/2)-2, y: Math.floor(rows/2)}
+      ];
+      dir = {x:1,y:0};
+      nextDir = {x:1,y:0};
+      placeFood();
+      coinsOnMap = [];
+      // spawn a coin at start sometimes
+      if (Math.random() < 0.5) placeCoin();
+      score = 0;
+      gameOver = false;
+      lives = maxLives;
+      updateLivesDisplay();
+      scoreEl.textContent = score;
+      highEl.textContent = high;
+      clearInterval(tickInterval);
+      tickInterval = setInterval(gameTick, 1000 / baseSpeed);
+      resizeCanvas();
+      draw();
+    }
+
+    // Lose life handling
+    function loseLife(reason) {
+      lives = Math.max(0, lives - 1);
+      updateLivesDisplay();
+      showTemporaryMessage(reason ? `Hit: ${reason}` : 'Life lost', 900);
+      if (lives > 0) {
+        // respawn snake center, keep score and coins
+        snake = [
+          {x: Math.floor(cols/2), y: Math.floor(rows/2)},
+          {x: Math.floor(cols/2)-1, y: Math.floor(rows/2)},
+          {x: Math.floor(cols/2)-2, y: Math.floor(rows/2)}
+        ];
+        dir = {x:1,y:0};
+        nextDir = {x:1,y:0};
+        if (!food || !isCellFree(food.x, food.y)) placeFood();
+        draw();
+      } else {
+        endGame();
+      }
+    }
+
+    // Game tick
+    function gameTick() {
+      if (gameOver) return;
+      dir = nextDir;
+      let head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+      // wrap behavior
+      if (wrapWalls) {
+        if (head.x < 0) head.x = cols - 1;
+        if (head.x >= cols) head.x = 0;
+        if (head.y < 0) head.y = rows - 1;
+        if (head.y >= rows) head.y = 0;
+        if (blocked[head.y][head.x]) { loseLife('obstacle'); return; }
+      } else {
+        if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) { loseLife('wall'); return; }
+        if (blocked[head.y][head.x]) { loseLife('obstacle'); return; }
+      }
+
+      // self collision
+      if (snake.some(s => s.x === head.x && s.y === head.y)) { loseLife('self'); return; }
+
+      snake.unshift(head);
+
+      // coin collection
+      for (let i = coinsOnMap.length - 1; i >= 0; i--) {
+        const c = coinsOnMap[i];
+        if (c.x === head.x && c.y === head.y) {
+          coins += 1;
+          localStorage.setItem('snakeCoins', coins);
+          coinsOnMap.splice(i,1);
+          updateCoinsDisplay();
+          showTemporaryMessage('+1 coin', 700);
+        }
+      }
+
+      // eat food
+      if (food && head.x === food.x && head.y === food.y) {
+        score += 1;
+        // spawn coin sometimes when eating food
+        if (Math.random() < 0.6) placeCoin();
+        if (score % 3 === 0) {
+          baseSpeed = Math.min(80, baseSpeed + speedInc);
+          clearInterval(tickInterval);
+          tickInterval = setInterval(gameTick, 1000 / baseSpeed);
+        }
+        scoreEl.textContent = score;
+        if (score > high) { high = score; localStorage.setItem('snakeHigh', high); highEl.textContent = high; }
+        placeFood();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function endGame() {
+      gameOver = true;
+      clearInterval(tickInterval);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = '28px system-ui, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over', canvas.width/2, canvas.height/2 - 10);
+      ctx.font = '16px system-ui, Arial';
+      ctx.fillText('Press R to restart', canvas.width/2, canvas.height/2 + 18);
+    }
+
+    // Drawing
+    function drawGrid() {
+      if (!gridOn) return;
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 1;
+      for (let x=0;x<=cols;x++){ ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,rows*CELL); ctx.stroke(); }
+      for (let y=0;y<=rows;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(cols*CELL,y*CELL); ctx.stroke(); }
+    }
+
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const g = ctx.createLinearGradient(0,0,0,canvas.height);
+      g.addColorStop(0,'#071026'); g.addColorStop(1,'#04101a');
+      ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      drawGrid();
+
+      // draw blocked cells
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let y=0;y<rows;y++){
+        for (let x=0;x<cols;x++){
+          if (blocked[y][x]) {
+            roundRect(ctx, x*CELL+1, y*CELL+1, CELL-2, CELL-2, 4);
+            ctx.fill();
+          }
+        }
+      }
+
+      // draw coins
+      for (const c of coinsOnMap) {
+        ctx.fillStyle = '#ffd700';
+        roundRect(ctx, c.x*CELL + 4, c.y*CELL + 4, CELL-8, CELL-8, 6);
+        ctx.fill();
+        ctx.fillStyle = '#6b3b00';
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('¢', c.x*CELL + CELL/2, c.y*CELL + CELL/2 + 4);
+      }
+
+      // draw food
+      if (food) {
+        ctx.fillStyle = SKINS[currentSkin].food;
+        roundRect(ctx, food.x*CELL + 2, food.y*CELL + 2, CELL-4, CELL-4, 6);
+        ctx.fill();
+      }
+
+      // draw snake
+      for (let i=0;i<snake.length;i++){
+        const s = snake[i];
+        if (i === 0) {
+          ctx.fillStyle = SKINS[currentSkin].head;
+        } else {
+          const start = hexToRgb(SKINS[currentSkin].bodyStart);
+          const end = hexToRgb(SKINS[currentSkin].bodyEnd);
+          const t = i / Math.max(1, snake.length - 1);
+          const r = Math.round(lerp(start.r, end.r, t));
+          const g2 = Math.round(lerp(start.g, end.g, t));
+          const b = Math.round(lerp(start.b, end.b, t));
+          ctx.fillStyle = `rgb(${r},${g2},${b})`;
+        }
+        roundRect(ctx, s.x*CELL + 1, s.y*CELL + 1, CELL-2, CELL-2, 6);
+        ctx.fill();
+
+        // decoration on head
+        if (i === 0 && equippedDec !== 'none') {
+          drawDecoration(s.x, s.y, equippedDec);
+        }
+      }
+    }
+
+    function drawDecoration(cellX, cellY, dec) {
+      const cx = cellX*CELL + CELL/2;
+      const cy = cellY*CELL + CELL/2;
+      if (dec === 'stripe') {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(cellX*CELL + 2, cellY*CELL + CELL/2 - 3, CELL-4, 6);
+      } else if (dec === 'gem') {
+        ctx.fillStyle = '#00e6c3';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy-6);
+        ctx.lineTo(cx+6, cy);
+        ctx.lineTo(cx, cy+6);
+        ctx.lineTo(cx-6, cy);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // helpers
+    function roundRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+    function hexToRgb(hex) {
+      const h = hex.replace('#','');
+      return { r: parseInt(h.substring(0,2),16), g: parseInt(h.substring(2,4),16), b: parseInt(h.substring(4,6),16) };
+    }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+
+    // temporary message overlay
+    let tempMsgTimer = null;
+    function showTemporaryMessage(text, ms=800) {
+      clearTimeout(tempMsgTimer);
+      draw();
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      const w = 260, h = 48;
+      const x = (canvas.width - w)/2, y = (canvas.height - h)/2;
+      roundRect(ctx, x, y, w, h, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px system-ui, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, canvas.width/2, canvas.height/2 + 6);
+      tempMsgTimer = setTimeout(() => { draw(); }, ms);
+    }
+
+    // keyboard
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') setDirection(0,-1);
+      if (e.key === 'ArrowDown') setDirection(0,1);
+      if (e.key === 'ArrowLeft') setDirection(-1,0);
+      if (e.key === 'ArrowRight') setDirection(1,0);
+      if (e.key === 'r' || e.key === 'R') resetGame();
+      if (e.key === 'Escape') openMenu();
+    });
+
+    function setDirection(dx,dy) {
+      if (dx === -dir.x && dy === -dir.y) return;
+      nextDir = {x:dx,y:dy};
+    }
+
+    // UI events
+    restartBtn.addEventListener('click', resetGame);
+    toggleGridBtn.addEventListener('click', () => { gridOn = !gridOn; draw(); });
+
+    function openMenu() {
+      clearInterval(tickInterval);
+      menuOverlay.style.display = 'flex';
+      menuOverlay.setAttribute('aria-hidden','false');
+    }
+    function closeMenu() {
+      menuOverlay.style.display = 'none';
+      menuOverlay.setAttribute('aria-hidden','true');
+      if (!gameOver) tickInterval = setInterval(gameTick, 1000 / baseSpeed);
+    }
+    menuOpenBtn.addEventListener('click', openMenu);
+    closeMenuBtn.addEventListener('click', () => { updateSkinPreviewElements(); closeMenu(); });
+
+    // Shop UI
+    openShopBtn.addEventListener('click', () => {
+      menuOverlay.style.display = 'none';
+      shopOverlay.style.display = 'flex';
+      shopOverlay.setAttribute('aria-hidden','false');
+      renderShop();
+    });
+    closeShopBtn.addEventListener('click', () => {
+      shopOverlay.style.display = 'none';
+      shopOverlay.setAttribute('aria-hidden','true');
+      menuOverlay.style.display = 'flex';
+    });
+
+    function renderShop() {
+      shopGrid.innerHTML = '';
+      shopCoins.textContent = coins;
+      for (const item of SHOP_ITEMS) {
+        const el = document.createElement('div');
+        el.className = 'shop-item';
+        const title = document.createElement('div');
+        title.textContent = item.name;
+        const price = document.createElement('div');
+        price.textContent = item.price + '¢';
+        price.className = 'small';
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.width = '100%';
+        // determine owned
+        let owned = false;
+        if (item.type === 'skin') owned = ownedSkins.includes(item.id);
+        else owned = ownedDec.includes(item.id);
+        btn.textContent = owned ? 'Owned' : `Buy ${item.price}¢`;
+        if (owned) btn.disabled = true;
+        btn.addEventListener('click', () => {
+          if (coins >= item.price) {
+            coins -= item.price;
+            localStorage.setItem('snakeCoins', coins);
+            if (item.type === 'skin') {
+              ownedSkins.push(item.id);
+              localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+            } else {
+              ownedDec.push(item.id);
+              localStorage.setItem('ownedDec', JSON.stringify(ownedDec));
+            }
+            shopCoins.textContent = coins;
+            coinsDisplay.textContent = coins;
+            renderShop();
+            showTemporaryMessage(`${item.name} purchased`, 900);
+          } else {
+            showTemporaryMessage('Not enough coins', 900);
+          }
+        });
+        el.appendChild(title);
+        el.appendChild(price);
+        el.appendChild(btn);
+        shopGrid.appendChild(el);
+      }
+    }
+
+    // Start button applies settings and starts
+    startBtn.addEventListener('click', () => {
+      const chosenDiff = menuDifficulty.value;
+      const chosenSkin = menuSkin.value;
+      const chosenMap = menuMap.value;
+      const chosenLives = Math.min(15, Math.max(1, parseInt(menuLives.value || '3', 10)));
+      applySettings(chosenDiff, chosenSkin, chosenMap, chosenLives);
+      closeMenu();
+      resetGame();
+    });
+
+    function applySettings(diff, skin, map, chosenLives) {
+      const cfg = DIFFICULTIES[diff] || DIFFICULTIES['medium'];
+      baseSpeed = cfg.speed; speedInc = cfg.speedInc; wrapWalls = cfg.wrap;
+      currentSkin = skin || 'classic';
+      applyMapPreset(map || 'open');
+      currentMap = map || 'open';
+      maxLives = chosenLives || 3;
+      lives = maxLives;
+      currentDiff.textContent = `Difficulty ${diff}`;
+      currentMapEl.textContent = `Map ${currentMap}`;
+      updateSkinPreviewElements();
+      updateLivesDisplay();
+      updateCoinsDisplay();
+    }
+
+    function updateLivesDisplay() { livesDisplay.textContent = String(lives); }
+    function updateCoinsDisplay() { coinsDisplay.textContent = coins; shopCoins.textContent = coins; }
+
+    // update skin preview when selection changes
+    menuSkin.addEventListener('change', () => {
+      const val = menuSkin.value; const s = SKINS[val] || SKINS.classic;
+      menuSkinPreview.style.background = `linear-gradient(90deg, ${s.bodyStart}, ${s.bodyEnd})`;
+      menuSkinPreview.style.borderColor = s.head;
+    });
+
+    // equip skin from menu selection if owned
+    menuSkin.addEventListener('blur', () => {
+      const val = menuSkin.value;
+      if (ownedSkins.includes(val) || SKINS[val].price === 0) {
+        currentSkin = val;
+        updateSkinPreviewElements();
+      } else {
+        // if not owned, keep previous skin
+        menuSkin.value = currentSkin;
+        showTemporaryMessage('Skin locked. Buy in shop.', 900);
+      }
+    });
+
+    // decoration equip UI in shop: clicking owned decoration equips it
+    shopGrid.addEventListener('click', (e) => {
+      // handled in renderShop buy flow; equip via separate small UI could be added
+    });
+
+    // allow equipping decoration by clicking owned dec in shop area (quick equip)
+    // add small equip buttons to shop items (re-render with equip option)
+    function renderShop() {
+      shopGrid.innerHTML = '';
+      shopCoins.textContent = coins;
+      for (const item of SHOP_ITEMS) {
+        const el = document.createElement('div');
+        el.className = 'shop-item';
+        const title = document.createElement('div');
+        title.textContent = item.name;
+        const price = document.createElement('div');
+        price.textContent = item.price + '¢';
+        price.className = 'small';
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.width = '100%';
+        let owned = false;
+        if (item.type === 'skin') owned = ownedSkins.includes(item.id);
+        else owned = ownedDec.includes(item.id);
+        btn.textContent = owned ? (item.type === 'dec' && equippedDec === item.id ? 'Equipped' : 'Owned') : `Buy ${item.price}¢`;
+        if (owned) {
+          btn.disabled = false;
+          btn.addEventListener('click', () => {
+            if (item.type === 'skin') {
+              // equip skin if owned
+              if (ownedSkins.includes(item.id)) {
+                currentSkin = item.id;
+                menuSkin.value = item.id;
+                updateSkinPreviewElements();
+                showTemporaryMessage(`${item.name} equipped`, 900);
+              }
+            } else {
+              // decoration equip
+              if (ownedDec.includes(item.id)) {
+                equippedDec = item.id;
+                localStorage.setItem('equippedDec', equippedDec);
+                decDisplay.textContent = equippedDec;
+                showTemporaryMessage(`${item.name} equipped`, 900);
+              }
+            }
+            renderShop();
+          });
+        } else {
+          btn.addEventListener('click', () => {
+            if (coins >= item.price) {
+              coins -= item.price;
+              localStorage.setItem('snakeCoins', coins);
+              if (item.type === 'skin') {
+                ownedSkins.push(item.id);
+                localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+                currentSkin = item.id;
+                menuSkin.value = item.id;
+              } else {
+                ownedDec.push(item.id);
+                localStorage.setItem('ownedDec', JSON.stringify(ownedDec));
+                equippedDec = item.id;
+                localStorage.setItem('equippedDec', equippedDec);
+              }
+              updateCoinsDisplay();
+              renderShop();
+              updateSkinPreviewElements();
+              showTemporaryMessage(`${item.name} purchased`, 900);
+            } else {
+              showTemporaryMessage('Not enough coins', 900);
+            }
+          });
+        }
+        el.appendChild(title);
+        el.appendChild(price);
+        el.appendChild(btn);
+        shopGrid.appendChild(el);
+      }
+    }
+
+    // initialize previews and defaults
+    (function init(){
+      // ensure owned arrays include defaults
+      if (!ownedSkins.includes('classic')) ownedSkins.push('classic');
+      if (!ownedDec.includes('none')) ownedDec.push('none');
+      localStorage.setItem('ownedSkins', JSON.stringify(ownedSkins));
+      localStorage.setItem('ownedDec', JSON.stringify(ownedDec));
+      currentSkin = menuSkin.value;
+      const d = menuDifficulty.value;
+      const cfg = DIFFICULTIES[d] || DIFFICULTIES['medium'];
+      baseSpeed = cfg.speed; speedInc = cfg.speedInc; wrapWalls = cfg.wrap;
+      currentMap = menuMap.value;
+      applyMapPreset(currentMap);
+      updateSkinPreviewElements();
+      resizeCanvas();
+      menuOverlay.style.display = 'flex';
+      shopOverlay.style.display = 'none';
+      updateCoinsDisplay();
+      decDisplay.textContent = equippedDec;
+    })();
+
+    // initial static draw
+    function initialDraw() {
+      canvas.width = cols * CELL; canvas.height = rows * CELL;
+      const g = ctx.createLinearGradient(0,0,0,canvas.height);
+      g.addColorStop(0,'#071026'); g.addColorStop(1,'#04101a');
+      ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#fff'; ctx.font = '18px system-ui, Arial'; ctx.textAlign = 'center';
+      ctx.fillText('Choose difficulty, skin, map and lives then Start Game', canvas.width/2, canvas.height/2);
+    }
+    initialDraw();
+
+    // coin spawn timer: try to spawn a coin every 6-10 seconds
+    setInterval(() => {
+      if (!gameOver && menuOverlay.style.display === 'none' && shopOverlay.style.display === 'none') {
+        if (Math.random() < 0.6) placeCoin();
+      }
+    }, 7000);
+
+    // pause/resume on visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearInterval(tickInterval);
+      else if (!gameOver && menuOverlay.style.display === 'none' && shopOverlay.style.display === 'none') tickInterval = setInterval(gameTick, 1000 / baseSpeed);
+    });
+
+    // ensure canvas resizes on window resize
+    window.addEventListener('resize', () => {
+      canvas.style.width = Math.min(canvas.width, window.innerWidth - 160) + 'px';
+    });
+  </script>
+</body>
+</html>

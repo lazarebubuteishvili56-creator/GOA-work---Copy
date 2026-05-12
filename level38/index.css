@@ -1,0 +1,30 @@
+ body{
+    background-color: black;
+}
+
+.parent{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.child{
+    width: 100px;
+    height: 100px;
+    background-color: rgb(21, 0, 255);
+} 
+
+
+/* body{
+    background-color: black;
+}
+
+.parent{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.child{
+    width: 100px;
+    height: 100px;
+    background-color: rgb(255, 0, 183);
+} */

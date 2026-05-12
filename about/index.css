@@ -1,0 +1,46 @@
+body{
+    background-color: rgb(0, 0, 0);
+    color: greenyellow;
+}
+.up{
+    border: 1px solid;
+    background-color: green;
+    box-shadow: 0px 0px 20px black;
+}
+.img{
+    height: 250px;
+    width: 300px;
+}
+
+.header1{
+    background-color: green;
+    height: 70px;
+    
+}
+a:hover{
+    color: black ;
+}
+.nav1{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+}
+.a1{
+    font-size: 20px;
+    text-decoration: none;
+    color: white;
+}
+
+.css{
+    height: 200px;
+    width: 300px;
+}
+.divimg{
+    height: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}

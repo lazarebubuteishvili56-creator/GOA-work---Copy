@@ -1,0 +1,47 @@
+Div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+}
+.welcome{
+    border: 1px solid;
+    border-radius: 20px;
+    text-align: center;
+    background-color: aqua;
+    box-shadow: 3px 3px 10px black;
+}
+.Shawarma{
+    text-align: center;   
+    padding: 70px;
+}
+.image{
+    border: 1px solid;
+    border-radius: 20px;
+    width: 300px;
+}
+.image:hover{
+    box-shadow: 3px 3px 3px 3px black;
+     transition: all 0.2s ease-in;
+}
+
+.bur{
+    border: 1px solid;
+    border-radius: 20px;
+    width: 350px;
+    height: 300px;
+    
+}
+.bur:hover{
+      box-shadow: 3px 3px 3px 3px black;
+     transition: all 0.2s ease-in;
+}
+.mak{
+    border: 1px solid;
+    border-radius: 20px;
+}
+    
+.mak:hover{
+    box-shadow: 3px 3px 3px 3px black;
+     transition: all 0.2s ease-in;
+}
