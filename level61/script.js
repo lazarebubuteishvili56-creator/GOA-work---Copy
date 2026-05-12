@@ -45,7 +45,7 @@
 
 
 
-// const nums = [5, 8, -2, 10];
+const nums = [5, 8, -2, 10];
 
 // const hasNegative = nums.some(function(num) {
 //     return num < 0;
